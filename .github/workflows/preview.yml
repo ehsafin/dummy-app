@@ -1,0 +1,49 @@
+name: preview
+on:
+  pull_request:
+    branches:
+      - develop
+    types:
+      - opened
+      - synchronize
+
+    paths-ignore:
+      - ".github/workflows/**"
+
+jobs:
+  update:
+    name: EAS update
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: check for EXPO_TOKEN
+        run: |
+          if[-z "${{ secrets.EXPO__TOKEN }}" ]; then
+              echo "You must provide an EXPO_TOKEN secret linked to this project's expo account"
+              exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: action/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: yarn
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Create Preview
+        uses: expo/expo-github-action/preview@v8
+        with:
+          command: eas update --auto
